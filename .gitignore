@@ -1,0 +1,30 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# --- Node ---
+node_modules/
+*.log
+
+# --- Build output ---
+frontend/dist/
+
+# --- Runtime generated data ---
+data/sample/
+data/uploads/
+models/*.pkl
+
+# --- Secrets / local config ---
+.env
+.streamlit/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

@@ -1,0 +1,21 @@
+Location_ID,Location_Name,Location_Type
+LOC001,Metro Central Transit Hub,Office
+LOC002,St. Jude Healthcare Clinic,Fitness
+LOC003,Grand Plaza Supermarket,Education
+LOC004,Downtown Community Gym,Transit
+LOC005,Harbor Logistics Warehouse,Fitness
+LOC006,Suburban Kiosk Express,Healthcare
+LOC007,City Park Pavilion,Healthcare
+LOC008,Riverside Café,Healthcare
+LOC009,Central Library,Retail
+LOC010,Municipal Office Complex,Office
+LOC011,Airport Terminal B,Industrial
+LOC012,Bus Depot South,Fitness
+LOC013,University Campus Hall,Fitness
+LOC014,Shopping Mall East,Industrial
+LOC015,Pharmacy Plus Downtown,Food
+LOC016,Venue_16,Industrial
+LOC017,Venue_17,Healthcare
+LOC018,Venue_18,Healthcare
+LOC019,Venue_19,Industrial
+LOC020,Venue_20,Industrial
