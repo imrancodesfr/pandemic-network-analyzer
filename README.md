@@ -120,7 +120,7 @@ python -u api/analysis_worker.py \
 | **Overview** | KPI strip, cohort status donut, giant-component gauge, data-quality scorecard, hub charts, model snapshot |
 | **Executive Summary** | 7 KPI row, multi-domain intelligence synthesis cards, risk-tie composition, resource-allocation simulation with sliders + prioritized roster, Section 38 explainability |
 | **Data Validation** | 9-layer validation registry with PASS/WARNING/ERROR chips + validation-health bar |
-| **Network Explorer** | Animated contact graph (Live traffic pulses along contacts) with Top 25/50 / Giant component / All views, **ego-network focus** when you pick a person, WebGL rendering with automatic 2D fallback, readable node hover, searchable node inspector, network structure stats |
+| **Network Explorer** | Animated contact graph (Live traffic pulses along contacts) with Top 25/50 / Giant component / All views, **ego-network focus** when you pick a person, WebGL rendering with automatic 2D fallback, a numerically **stable force layout** (every view renders with finite, non-overlapping coordinates), readable node hover, searchable node inspector, network structure stats |
 | **Location Hotspots** | Location leaderboard with filters, per-location inspector (case visitors vs visitors chart), case-visitor distribution |
 | **Risk Prediction** | RF metrics, confusion matrix, feature importance, **individual risk inspector** (big risk % + key features), searchable predictions explorer with **inspect →** that scrolls to and highlights the chosen person |
 
@@ -340,3 +340,15 @@ The system enforces **pseudonymous identifiers** (`P001`, `P002`, …) and shows
 a privacy notice on the upload screen. Do **not** upload identifiable patient
 information (names, phone numbers, addresses, government IDs) unless you are
 authorized to process it.
+
+---
+
+## 📝 Changelog
+
+### UI
+- **Network Explorer layout stability.** The small-graph force layout now uses a
+  displacement-capped Fruchterman–Reingold relaxation (cooling-based per-node
+  movement cap and a guarded repulsion term) instead of an unbounded
+  relaxation. Every view—Top 25 hubs, Top 50 hubs, giant component and
+  all—now produces finite, stable coordinates. Previously the high-degree hub
+  views could diverge to non-finite positions and render as a blank graph.

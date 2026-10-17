@@ -54,8 +54,8 @@ function layoutGraph(nodeIds, edges, degreeMap, centerId) {
   });
 
   if (n <= 60) {
-    const iters = 90;
-    const k = 1.4;
+    const iters = 120;
+    const k = Math.max(0.35, Math.sqrt(2 / n) * 1.6);
     const adj = Array.from({ length: n }, () => []);
     for (const [u, v] of edges) {
       if (index[u] == null || index[v] == null) continue;
@@ -63,36 +63,43 @@ function layoutGraph(nodeIds, edges, degreeMap, centerId) {
       adj[index[v]].push(index[u]);
     }
     for (let iter = 0; iter < iters; iter += 1) {
-      const temp = 0.12 * (1 - iter / iters);
+      const cooling = 1 - iter / iters;
       const dx = new Array(n).fill(0);
       const dy = new Array(n).fill(0);
       for (let i = 0; i < n; i += 1) {
         for (let j = i + 1; j < n; j += 1) {
           let rx = x[i] - x[j];
           let ry = y[i] - y[j];
-          let dist = Math.sqrt(rx * rx + ry * ry) || 0.01;
-          let f = (k * k) / dist;
-          rx /= dist; ry /= dist;
-          dx[i] += rx * f; dy[i] += ry * f;
-          dx[j] -= rx * f; dy[j] -= ry * f;
+          let d2 = rx * rx + ry * ry;
+          if (d2 < 1e-8) { rx = (i % 2 ? 1 : -1) * 1e-3; ry = (j % 2 ? 1 : -1) * 1e-3; d2 = rx * rx + ry * ry; }
+          const d = Math.sqrt(d2);
+          const f = (k * k) / d;
+          const ux = rx / d, uy = ry / d;
+          dx[i] += ux * f; dy[i] += uy * f;
+          dx[j] -= ux * f; dy[j] -= uy * f;
         }
       }
       for (let i = 0; i < n; i += 1) {
         for (const j of adj[i]) {
           if (j <= i) continue;
-          const rx = x[i] - x[j];
-          const ry = y[i] - y[j];
-          const dist = Math.sqrt(rx * rx + ry * ry) || 0.01;
-          const f = (dist * dist) / k;
-          let ux = rx / dist, uy = ry / dist;
-          if (ux === 0 && uy === 0) { ux = 1; uy = 0; }
+          let rx = x[i] - x[j];
+          let ry = y[i] - y[j];
+          let d2 = rx * rx + ry * ry;
+          if (d2 < 1e-8) { rx = 1e-3; ry = 0; d2 = rx * rx; }
+          const d = Math.sqrt(d2);
+          const f = (d * d) / k;
+          const ux = rx / d, uy = ry / d;
           dx[i] -= ux * f; dy[i] -= uy * f;
           dx[j] += ux * f; dy[j] += uy * f;
         }
       }
       for (let i = 0; i < n; i += 1) {
-        x[i] += dx[i] * temp;
-        y[i] += dy[i] * temp;
+        // Cap each node's movement per iteration so repulsion can never explode.
+        const cap = 0.25 * cooling + 0.02;
+        const disp = Math.sqrt(dx[i] * dx[i] + dy[i] * dy[i]) || 1e-9;
+        const scale = Math.min(1, cap / disp);
+        x[i] += dx[i] * scale;
+        y[i] += dy[i] * scale;
       }
     }
   }
