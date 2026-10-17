@@ -1,10 +1,14 @@
 import { useEffect, useRef } from "react";
 import Plotly from "plotly.js-dist-min";
 
+const AXIS = { gridcolor: "#eef1f7", linecolor: "#dde3f0", zerolinecolor: "#dde3f0", tickfont: { color: "#7d8aa3" } };
+
 const BASE_LAYOUT = {
   paper_bgcolor: "rgba(0,0,0,0)",
-  plot_bgcolor: "#0d1322",
-  font: { color: "#bcc9cd", family: "JetBrains Mono, monospace" },
+  plot_bgcolor: "#ffffff",
+  font: { color: "#42506b", family: "Inter, -apple-system, 'Segoe UI', Roboto, sans-serif" },
+  xaxis: AXIS,
+  yaxis: AXIS,
   margin: { l: 48, r: 20, t: 40, b: 44 },
   autosize: true,
 };

@@ -20,6 +20,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const log = (...a) => console.log(`[${new Date().toISOString()}]`, ...a);
+
+// Log every request with duration + outcome (including early client aborts).
+app.use((req, res, next) => {
+  const t0 = Date.now();
+  res.on("finish", () => log(`${req.method} ${req.originalUrl} → ${res.statusCode} (${Date.now() - t0}ms)`));
+  res.on("close", () => {
+    if (!res.writableEnded) log(`${req.method} ${req.originalUrl} → client aborted after ${Date.now() - t0}ms`);
+  });
+  next();
+});
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 25 * 1024 * 1024 },
@@ -101,6 +113,12 @@ app.get("/api/sample", (req, res) => {
 });
 
 app.post("/api/analyze", upload.fields(FILE_FIELDS), (req, res) => {
+  const t0 = Date.now();
+  log("analyze START: files=", Object.keys(req.files ?? {}).join(",") || "none");
+  res.on("close", () => {
+    if (res.writableEnded) log(`analyze DONE in ${Date.now() - t0}ms`);
+  });
+
   const files = req.files ?? {};
   const missing = [];
   for (const key of ["peopleFile", "contactsFile", "visitsFile"]) {
@@ -190,6 +208,14 @@ if (fs.existsSync(DIST_DIR)) {
 }
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`API + app listening on http://localhost:${PORT}`);
+const server = app.listen(PORT, () => {
+  log(`API + app listening on http://localhost:${PORT}`);
+});
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`\nPort ${PORT} is already in use — the server is probably already running.`);
+    console.error(`Open http://localhost:${PORT} in your browser. (To restart: kill the old Node process first.)\n`);
+    process.exit(1);
+  }
+  throw err;
 });

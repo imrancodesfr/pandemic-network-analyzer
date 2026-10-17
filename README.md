@@ -9,9 +9,12 @@ Built as a three-tier stack:
 
 | Tier | Tech | Responsibility |
 |------|------|----------------|
-| **UI** | React · Vite · Plotly.js | Upload flow, live analysis progress, dashboard & explorer |
+| **UI** | React · Vite · Plotly.js | Landing page, upload flow, live analysis progress, dashboard & explorer, inline plain-language help |
 | **API** | Node.js · Express | File intake, spawns the Python engine, streams progress as NDJSON |
 | **Engine** | Python · NetworkX · Pandas · Scikit-learn | **All** analysis & ML — never approximated in the UI |
+
+Every metric, chart and term in the UI is explained in plain language via
+hover/tap tooltips and "how to read this" panels — no analyst background needed.
 
 ---
 
@@ -94,23 +97,49 @@ python -u api/analysis_worker.py \
 
 ## 🖱️ Using The App
 
-1. **Upload data** — drag your CSVs into the drop zone. Roles
+1. **Start on the landing page** — a SolarWinds-style splash with an animated
+   network preview, feature highlights and guardrails. Use **Launch app** to
+   open the workflow, or **Try a sample** to jump straight into a one-click
+   analysis. (The logo in the header always returns here.)
+2. **Try a sample instantly** — four bundled datasets (`small` / `medium` /
+   `large` / `xlarge`) as cards, each with **use** (load & review) and
+   **▶ analyze** (one-click load + run) buttons.
+3. **Or upload your own data** — drag your CSVs into the drop zone. Roles
    (`people` / `contacts` / `visits` / `locations`) are detected automatically
    from the columns. Each file shows a status row: role, size, row estimate,
-   and its columns with required ones highlighted. Or click a **sample** button
-   (`small` / `medium` / `large` / `xlarge`) to load bundled data instantly.
-2. **Run Analysis** — the button is disabled until `people`, `contacts` and
+   and its columns with required ones highlighted.
+4. **Run Analysis** — the button is disabled until `people`, `contacts` and
    `visits` are all present. You decide when to start — nothing runs silently.
-3. **Watch progress** — 6 live stages stream from the Python engine
+5. **Watch progress** — 6 live stages stream from the Python engine
    (`loading → validating → network → hotspots → quality → model`).
-4. **Explore results** — four tabs:
+6. **Explore results** — six tabs, with hover/tap help everywhere (see
+   [Plain-Language Help](#-plain-language-help)):
 
 | Tab | Contents |
 |-----|----------|
-| **Overview** | Dataset summary, data quality, status mix, hotspot counts, top hubs, model snapshot |
-| **Data Validation** | Full 9-layer validation registry with PASS / WARNING / ERROR chips |
-| **Risk Prediction** | Random Forest metrics, confusion matrix, feature importance, searchable + tier-filtered predictions |
-| **Network Explorer** | Top-25/50/All contact-network graph, searchable node inspector, location-exposure chart, hotspot table |
+| **Overview** | KPI strip, cohort status donut, giant-component gauge, data-quality scorecard, hub charts, model snapshot |
+| **Executive Summary** | 7 KPI row, multi-domain intelligence synthesis cards, risk-tie composition, resource-allocation simulation with sliders + prioritized roster, Section 38 explainability |
+| **Data Validation** | 9-layer validation registry with PASS/WARNING/ERROR chips + validation-health bar |
+| **Network Explorer** | Animated contact graph (Live traffic pulses along contacts) with Top 25/50 / Giant component / All views, **ego-network focus** when you pick a person, WebGL rendering with automatic 2D fallback, readable node hover, searchable node inspector, network structure stats |
+| **Location Hotspots** | Location leaderboard with filters, per-location inspector (case visitors vs visitors chart), case-visitor distribution |
+| **Risk Prediction** | RF metrics, confusion matrix, feature importance, **individual risk inspector** (big risk % + key features), searchable predictions explorer with **inspect →** that scrolls to and highlights the chosen person |
+
+---
+
+## 🧭 Plain-Language Help
+
+The whole UI is self-explaining so a non-analyst can interpret every number:
+
+- **Hover tips** — an orange **ⓘ** icon or a dotted-underline term reveals a
+  short "what it is" plus "how to read it" explanation. Tooltips auto-flip
+  above/below the pointer and stay inside the viewport.
+- **"How to read this" panels** — collapsible `<HelpBox>` blocks sit beside
+  every chart (e.g. *How to read this graph*, the data-quality scorecard, the
+  guardrail rules).
+- **Single source of truth** — all definitions live in one glossary
+  (`frontend/src/lib/glossary.js`) and are rendered by reusable `Info` /
+  `Term` / `HelpBox` components (`frontend/src/components/Help.jsx`), so
+  wording stays consistent across tabs.
 
 ---
 
@@ -147,9 +176,15 @@ pandemic-network-analyzer/
 │
 ├── frontend/                  # React + Vite UI
 │   ├── src/
-│   │   ├── App.jsx            # 3-step flow: upload -> analyze -> results
-│   │   ├── lib/               # API client + CSV role detection helpers
-│   │   └── components/        # Upload/analyze steps + 4 result tabs + Plotly wrapper
+│   │   ├── App.jsx            # Landing page + 3-step flow: upload -> analyze -> results
+│   │   ├── lib/
+│   │   │   ├── api.js         # API client (sample + analyze)
+│   │   │   ├── utils.js       # CSV parsing, role detection, validation grouping
+│   │   │   └── glossary.js    # Plain-language definitions for every metric/term
+│   │   └── components/        # Upload/analyze steps + 6 result tabs + Plotly wrapper
+│   │       ├── Landing.jsx    # SolarWinds-style splash page
+│   │       ├── Help.jsx       # <Info> / <Term> / <HelpBox> hover-help primitives
+│   │       └── …              # Overview/Executive/Validation/Network/Locations/Risk tabs
 │   └── vite.config.js         # dev proxy: /api -> localhost:3000
 │
 ├── config/settings.py         # Constants, thresholds, default params

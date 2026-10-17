@@ -216,10 +216,21 @@ def main():
         tier_counts = predictions["Risk_Tier"].value_counts().to_dict()
         tier_counts = {k: int(v) for k, v in tier_counts.items()}
 
+        inspector_feats = [
+            "degree_centrality", "betweenness_centrality",
+            "case_contacts", "high_assoc_location_visits",
+        ]
+        feat_map = {}
+        for r in features_df.to_dict(orient="records"):
+            feat_map[str(r["Person_ID"])] = {
+                name: clean(r.get(name)) for name in inspector_feats
+            }
+
         pred_records = [{
             "id": str(r["Person_ID"]),
             "risk": clean(r["Predicted_Risk"]),
             "tier": str(r["Risk_Tier"]),
+            "features": feat_map.get(str(r["Person_ID"]), {}),
         } for r in predictions.to_dict(orient="records")]
 
         cm = ml_result["confusion_matrix"].tolist()

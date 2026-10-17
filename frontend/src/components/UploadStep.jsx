@@ -1,12 +1,19 @@
 import { useRef, useState } from "react";
 import { ROLE_CONFIG, formatBytes, parseCsvPreview, detectRole } from "../lib/utils.js";
 import { fetchSample } from "../lib/api.js";
+import { HelpBox, Term } from "./Help.jsx";
 
-const SAMPLE_SIZES = ["small", "medium", "large", "xlarge"];
+const SAMPLE_SIZES = [
+  { id: "small", desc: "500 people · ~3k records", blurb: "Instant demo on a compact community" },
+  { id: "medium", desc: "1,000 people · ~6k records", blurb: "A typical town outpatient setting" },
+  { id: "large", desc: "2,000 people · ~13k records", blurb: "Larger metro / campus network" },
+  { id: "xlarge", desc: "3,000 people · ~22k records", blurb: "Stress test — sampled betweenness" },
+];
+
 const GUARDRAIL_BANNER =
   "[GUARDRAIL: NETWORK CENTRALITY ≠ CLINICAL PRIORITY | HIGH CASE ASSOCIATION ≠ PROOF OF CONTAMINATION | MODEL PREDICTION ≠ MEDICAL DIAGNOSIS]";
 
-export default function UploadStep({ files, setFiles, onRun, loadingSample, setLoadingSample, busy }) {
+export default function UploadStep({ files, setFiles, onRun, onQuickDemo, loadingSample, setLoadingSample, busy }) {
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const [notice, setNotice] = useState(null);
@@ -56,7 +63,7 @@ export default function UploadStep({ files, setFiles, onRun, loadingSample, setL
     setFiles(next);
   }
 
-  async function loadSample(size) {
+  async function loadSample(size, runAfter = false) {
     setLoadingSample(size);
     try {
       const filesObj = await fetchSample(size);
@@ -65,7 +72,12 @@ export default function UploadStep({ files, setFiles, onRun, loadingSample, setL
         for (const [role, meta] of Object.entries(filesObj)) next[role] = meta;
         return next;
       });
-      setNotice(`Loaded ${size} sample dataset — review the files below, then run analysis.`);
+      setNotice(runAfter
+        ? `Loaded ${size} sample — analysis starting now.`
+        : `Loaded ${size} sample dataset — review the files below, then run analysis.`);
+      if (runAfter) {
+        window.setTimeout(() => onRun(), 250);
+      }
     } catch (e) {
       setNotice(e.message);
     } finally {
@@ -75,43 +87,80 @@ export default function UploadStep({ files, setFiles, onRun, loadingSample, setL
 
   return (
     <div>
-      <div className="banner">{GUARDRAIL_BANNER}</div>
-
-      <div className="grid cols-3" style={{ marginBottom: 16 }}>
-        {requiredKeys.map((k) => {
-          const cfg = ROLE_CONFIG[k];
-          const ok = !!files[k];
-          return (
-            <div className="metric" key={k}>
-              <div className="label">{cfg.label}
-                <span className={`dot ${ok ? "ok" : "warn"}`} style={{ float: "right" }} />
-              </div>
-              <div className="value" style={{ fontSize: 14, marginTop: 8 }}>
-                {ok ? (
-                  <>
-                    <span className="unit" style={{ color: "var(--green)" }}>● loaded</span>
-                    {" "}· {files[k].rowEstimate.toLocaleString()} rows
-                  </>
-                ) : (
-                  <span className="unit" style={{ color: "var(--amber)" }}>● missing (required)</span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-        <div className="metric" style={{ gridColumn: "1 / -1" }}>
-          <div className="label">Ready check</div>
-          <div className="value" style={{ fontSize: 14, marginTop: 8 }}>
-            <span className={`unit`} style={{ color: ready ? "var(--green)" : "var(--amber)" }}>
-              {assignedRequired} / 3 required files
-              {files.locations ? " · locations present (optional)" : " · locations optional"}
-            </span>
-          </div>
+      <div className="hero">
+        <h1>Analyze contact networks &amp; exposure patterns</h1>
+        <p className="sub">
+          Upload your own CSV datasets — or go straight to a bundled sample — and the Python engine will
+          build the <Term id="people">contact graph</Term>, rank <Term id="hub">hubs</Term> and <Term id="bridge">bridges</Term>,
+          flag location <Term id="hotspotsFlagged">hotspots</Term>, and train a <Term id="riskScore">risk model</Term>.
+          Everything is computed by networkx · pandas · scikit-learn.
+        </p>
+        <div className="cta-row">
+          <button
+            className="btn primary"
+            disabled={!!loadingSample || busy}
+            onClick={() => loadSample("small", true)}
+          >
+            ▶ Run a sample analysis
+          </button>
+          <button
+            className="btn outline"
+            onClick={() => document.getElementById("upload-own")?.scrollIntoView({ behavior: "smooth" })}
+          >
+            Upload your own data
+          </button>
+          <span className="cta-note">No uploads required to get started — fully functional sample datasets included.</span>
         </div>
       </div>
 
-      <div className="card">
-        <h3>1 · Add your CSV files</h3>
+      <div className="banner">{GUARDRAIL_BANNER}</div>
+      <HelpBox title="What do the guardrails mean?">
+        <ul>
+          <li><b>Network centrality ≠ clinical priority</b> — being a well-connected <Term id="hub">hub</Term> ranks structure, not medical risk.</li>
+          <li><b>High case association ≠ proof of contamination</b> — a location with many <Term id="uniqueCaseVisitors">case visitors</Term> is an association signal, not evidence that the place spread infection.</li>
+          <li><b>Model prediction ≠ medical diagnosis</b> — the <Term id="riskScore">risk score</Term> is a screening/ranking estimate, never a diagnosis.</li>
+        </ul>
+      </HelpBox>
+
+      <div className="section-tag">Try it now — bundled sample datasets</div>
+      <div className="samples">
+        {SAMPLE_SIZES.map((s) => (
+          <div className="sample-card" key={s.id}>
+            <span className="name">{s.id}</span>
+            <span className="desc" style={{ fontSize: 12, color: "var(--mut)" }}>{s.desc}</span>
+            <span className="spec">{s.blurb}</span>
+            <div className="actions">
+              <button
+                className={`btn small ${loadingSample === s.id ? "primary" : ""}`}
+                disabled={!!loadingSample || busy}
+                onClick={() => loadSample(s.id)}
+              >
+                {loadingSample === s.id ? "loading…" : "use"}
+              </button>
+              <button
+                className="btn small primary"
+                disabled={!!loadingSample || busy}
+                onClick={() => loadSample(s.id, true)}
+                title="Load this sample and start analysis immediately"
+              >
+                ▶ analyze
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="section-tag">Or upload your own data</div>
+      <div className="card" id="upload-own" style={{ scrollMarginTop: 70 }}>
+        <h3 style={{ marginTop: 0 }}>Add your CSV files</h3>
+        <HelpBox title="What do the four files mean?">
+          <ul>
+            <li><b>people</b> — one row per person. <code>Person_ID</code> identifies them; <code>Infection_Status</code> is their recorded case status (Confirmed / Suspected / Recovered / Not_Identified).</li>
+            <li><b>contacts</b> — one row per interaction: <code>Person_A</code> met <code>Person_B</code>. Each row becomes an edge (line) in the network.</li>
+            <li><b>visits</b> — one row per visit: a <code>Person_ID</code> attended a <code>Location_ID</code>. This is how hotspots are found.</li>
+            <li><b>locations</b> — optional list of places (<code>Location_ID</code>). Helpful but not required.</li>
+          </ul>
+        </HelpBox>
         <p className="muted" style={{ marginTop: 0 }}>
           Drop files anywhere here — roles are detected automatically from the CSV columns
           (people: <code>Person_ID, Infection_Status</code> · contacts: <code>Person_A, Person_B</code> ·
@@ -125,8 +174,9 @@ export default function UploadStep({ files, setFiles, onRun, loadingSample, setL
           onDragLeave={() => setDragging(false)}
           onDrop={(e) => { e.preventDefault(); setDragging(false); addPreviews(e.dataTransfer.files); }}
         >
+          <span className="drop-icon">📁</span>
           <div className="big">drag &amp; drop your CSV files, or click to browse</div>
-          <div className="sub">You can drop all files at once — each is matched to its role by its columns</div>
+          <div className="sub">You can drop all four files at once — each is matched to its role by its columns</div>
           <span className="hint">browse files</span>
           <input
             ref={inputRef}
@@ -138,9 +188,9 @@ export default function UploadStep({ files, setFiles, onRun, loadingSample, setL
           />
         </div>
 
-        {notice && <div className={`alert ${notice.startsWith("Loaded") ? "info" : "warn"}`}>{notice}</div>}
-        {!notice && assignedRequired === 0 && (
-          <div className="alert info">No files added yet. Load a bundled sample dataset below to try the tool instantly.</div>
+        {notice && <div className={`alert ${notice.includes("analysis starting") ? "success" : notice.startsWith("Loaded") ? "info" : "warn"}`}>{notice}</div>}
+        {!notice && Object.keys(files).length === 0 && (
+          <div className="alert info">No files added yet. Load a bundled sample dataset above to try the tool in seconds.</div>
         )}
 
         {Object.keys(files).length > 0 && (
@@ -172,24 +222,10 @@ export default function UploadStep({ files, setFiles, onRun, loadingSample, setL
         )}
       </div>
 
-      <div className="samples">
-        <span className="lbl">or load bundled sample data:</span>
-        {SAMPLE_SIZES.map((s) => (
-          <button
-            key={s}
-            className={`btn ${loadingSample === s ? "primary" : ""}`}
-            disabled={!!loadingSample || busy}
-            onClick={() => loadSample(s)}
-          >
-            {loadingSample === s ? "Loading…" : s}
-          </button>
-        ))}
-      </div>
-
       <div className="card" style={{ marginTop: 20, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-        <div className="spacer" style={{ flex: 1, minWidth: 220 }}>
+        <div className="spacer" style={{ flex: 1, minWidth: 240 }}>
           {ready ? (
-            <span className="muted bold" style={{ color: "var(--green)", fontFamily: "var(--mono)" }}>
+            <span className="muted" style={{ color: "var(--green)", fontFamily: "var(--mono)" }}>
               ● All required files selected — ready to analyze.
             </span>
           ) : (
@@ -198,7 +234,7 @@ export default function UploadStep({ files, setFiles, onRun, loadingSample, setL
             </span>
           )}
         </div>
-        <button className="btn primary" disabled={!ready} onClick={onRun} style={{ fontSize: 14, padding: "12px 26px" }}>
+        <button className="btn primary" disabled={!ready} onClick={onRun} style={{ fontSize: 14, padding: "13px 28px" }}>
           {ready ? "▶ Run Analysis" : "Run Analysis"}
         </button>
       </div>
